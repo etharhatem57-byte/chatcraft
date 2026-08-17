@@ -26,6 +26,7 @@ import { useTranslation } from "@/components/providers/LanguageProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { Button } from "@/components/ui/Button";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { Modal } from "@/components/ui/Modal";
 import { Spinner } from "@/components/ui/Spinner";
 import {
   type ExportFormat,
@@ -139,6 +140,7 @@ export function ChatPanel({ chatId }: { chatId: string }) {
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState("");
   const [detectedVoiceLang, setDetectedVoiceLang] = useState<"ar" | "en" | null>(null);
+  const [micModalOpen, setMicModalOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -277,7 +279,7 @@ export function ChatPanel({ chatId }: { chatId: string }) {
     }
   }
 
-  function toggleVoiceInput() {
+  async function toggleVoiceInput() {
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
@@ -291,6 +293,19 @@ export function ChatPanel({ chatId }: { chatId: string }) {
     if (!SpeechRec) {
       showToast(t("chat.micUnsupported"), "error");
       return;
+    }
+
+    // Explicitly request microphone stream to trigger native permission prompt if needed
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (err: unknown) {
+        console.warn("Microphone permission denied via getUserMedia:", err);
+        setMicModalOpen(true);
+        showToast(t("chat.micPermissionDenied"), "error");
+        return;
+      }
     }
 
     try {
@@ -336,6 +351,7 @@ export function ChatPanel({ chatId }: { chatId: string }) {
       recognition.onerror = (event: { error: string }) => {
         console.warn("Speech recognition error:", event.error);
         if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          setMicModalOpen(true);
           showToast(t("chat.micPermissionDenied"), "error");
         }
         setIsListening(false);
@@ -686,7 +702,7 @@ export function ChatPanel({ chatId }: { chatId: string }) {
             {/* Microphone Voice-to-Text Button */}
             <button
               type="button"
-              onClick={toggleVoiceInput}
+              onClick={() => void toggleVoiceInput()}
               className={`relative grid size-9 shrink-0 place-items-center rounded-xl transition focus:outline-none ${
                 isListening
                   ? "bg-blush-500 text-white shadow-mic-active scale-105"
@@ -720,6 +736,53 @@ export function ChatPanel({ chatId }: { chatId: string }) {
           <p className="mt-2 text-center text-[10px] text-[#AAA] sm:text-[11px]">{t("chat.disclaimer")}</p>
         </form>
       </div>
+
+      {/* Microphone Permission Guide Modal */}
+      <Modal
+        open={micModalOpen}
+        onClose={() => setMicModalOpen(false)}
+        title={t("chat.micModalTitle")}
+        description={t("chat.micModalDesc")}
+      >
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-blush-100 bg-blush-50/70 p-4">
+            <div className="flex items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blush-100 text-blush-700 shadow-soft">
+                <MicOff className="size-5" />
+              </span>
+              <div className="space-y-2.5 text-xs leading-5 text-ink">
+                <p className="flex items-start gap-2">
+                  <span className="grid size-5 shrink-0 place-items-center rounded-full bg-blush-200 text-[11px] font-bold text-blush-800">1</span>
+                  <span>{t("chat.micStep1")}</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <span className="grid size-5 shrink-0 place-items-center rounded-full bg-blush-200 text-[11px] font-bold text-blush-800">2</span>
+                  <span>{t("chat.micStep2")}</span>
+                </p>
+                <p className="flex items-start gap-2">
+                  <span className="grid size-5 shrink-0 place-items-center rounded-full bg-blush-200 text-[11px] font-bold text-blush-800">3</span>
+                  <span>{t("chat.micStep3")}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => setMicModalOpen(false)}>
+              {t("chat.micGotIt")}
+            </Button>
+            <Button
+              onClick={() => {
+                setMicModalOpen(false);
+                void toggleVoiceInput();
+              }}
+            >
+              <Mic className="size-4" />
+              <span>{t("chat.micTryAgain")}</span>
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }
@@ -793,7 +856,7 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
 }
 
 function parseMessageContent(content: string) {
-  const parts: Array<{ type: "text" | "code" | "file"; content: string; language?: string; fileName?: string }> = [];
+  const parts: Array<{ type: "text" | "code"; content: string; language?: string }> = [];
   const regex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
