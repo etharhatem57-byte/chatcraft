@@ -15,3 +15,6 @@ A production-oriented bilingual AI chat workspace built with the Next.js App Rou
 - Localized dates, validation messages, empty states, loading states, and errors
 - Same-origin mutation checks, bcrypt password hashing, Zod validation, and rate limiting
 - Credential-free in-memory demo mode for local evaluation
+
+
+https://chatcraft-six.vercel.app/
