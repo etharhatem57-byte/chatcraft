@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  * {
+    @apply border-blush-200;
+  }
+
+  html {
+    @apply bg-[#FAFAFA] antialiased;
+  }
+
+  body {
+    @apply min-h-screen bg-[#FAFAFA] font-sans text-ink;
+  }
+
+  ::selection {
+    @apply bg-blush-200 text-ink;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-blush-400 ring-offset-2 ring-offset-white;
+  }
+
+  button, a, input, textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  textarea {
+    field-sizing: content;
+  }
+}
+
+@layer utilities {
+  .glass-soft {
+    @apply border border-white/80 bg-white/75 shadow-soft backdrop-blur-md;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-soft {
+    scrollbar-width: thin;
+    scrollbar-color: #F0C8D8 transparent;
+  }
+}

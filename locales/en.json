@@ -1,0 +1,39 @@
+{
+  "brand": { "tagline": "Your calm space to think with AI" },
+  "nav": { "login": "Log in", "register": "Create account", "profile": "Profile", "backToChat": "Back to chats", "logout": "Log out" },
+  "landing": {
+    "eyebrow": "Bilingual AI workspace",
+    "title": "Ideas flow better in your own language.",
+    "description": "A calm, private AI chat workspace designed for clear thinking in English and Arabic.",
+    "primary": "Start chatting", "secondary": "I have an account",
+    "feature1Title": "Naturally bilingual", "feature1Text": "Switch language and direction instantly across every screen.",
+    "feature2Title": "Conversations remembered", "feature2Text": "Return to your ideas, rename chats, and continue anytime.",
+    "feature3Title": "Fast, thoughtful replies", "feature3Text": "Streamed responses powered by Groq keep your work moving.",
+    "previewGreeting": "Good afternoon", "previewQuestion": "How can I help you think today?", "previewPrompt": "Plan a focused week for my new project", "previewAnswer": "Let’s turn that into a calm, practical plan. We can begin with your three most important outcomes."
+  },
+  "auth": {
+    "welcomeBack": "Welcome back", "loginSubtitle": "Continue your conversations and ideas.",
+    "createAccount": "Create your account", "registerSubtitle": "A quiet space for your best thinking is one step away.",
+    "name": "Name", "namePlaceholder": "Your name", "email": "Email address", "emailPlaceholder": "you@example.com", "password": "Password", "passwordPlaceholder": "At least 8 characters", "confirmPassword": "Confirm password", "confirmPasswordPlaceholder": "Enter your password again",
+    "loginButton": "Log in", "registerButton": "Create account", "loggingIn": "Logging in…", "creating": "Creating account…",
+    "noAccount": "New to ChatCraft?", "hasAccount": "Already have an account?", "registerLink": "Create an account", "loginLink": "Log in",
+    "demoNote": "Preview mode is active — data is kept in memory. You can log in with demo@chatcraft.ai / password123 or register a new account.",
+    "fillDemo": "Fill demo credentials",
+    "errors": { "required": "Please complete all fields.", "email": "Enter a valid email address.", "passwordLength": "Password must be at least 8 characters.", "passwordMismatch": "Passwords do not match.", "invalidCredentials": "Email or password is incorrect.", "emailExists": "An account with this email already exists.", "generic": "Something went wrong. Please try again." }
+  },
+  "chat": {
+    "chats": "Conversations", "newChat": "New chat", "search": "Search conversations", "noChats": "No conversations yet", "noChatsText": "Start a new chat and your ideas will appear here.",
+    "welcome": "What would you like to explore?", "welcomeSubtitle": "Ask a question, shape an idea, or make a plan.",
+    "suggestion1": "Help me plan a focused work week", "suggestion2": "Explain a complex topic simply", "suggestion3": "Brainstorm ideas for a new project",
+    "placeholder": "Message ChatCraft…", "send": "Send message", "thinking": "Thinking", "disclaimer": "ChatCraft can make mistakes. Check important information.",
+    "rename": "Rename", "delete": "Delete", "renameTitle": "Rename conversation", "renameDescription": "Choose a short name that will be easy to find later.", "chatTitle": "Conversation name", "cancel": "Cancel", "save": "Save changes", "saving": "Saving…",
+    "deleteTitle": "Delete conversation?", "deleteDescription": "This conversation and all its messages will be permanently removed.", "deleteConfirm": "Delete conversation", "deleting": "Deleting…", "today": "Today", "yesterday": "Yesterday", "older": "Earlier",
+    "menu": "Open conversation menu", "openSidebar": "Open conversations", "closeSidebar": "Close conversations", "copy": "Copy message", "copied": "Copied", "download": "Download", "downloadChat": "Download conversation", "downloadMessage": "Download message as file", "downloaded": "File downloaded", "downloadAsMarkdown": "Markdown (.md)", "downloadAsText": "Plain text (.txt)", "downloadAsJson": "JSON data (.json)", "exportOptions": "Export options", "you": "You", "assistant": "ChatCraft",
+    "errorLoad": "We couldn’t load this conversation.", "errorSend": "Your message couldn’t be sent. Please try again.", "notFound": "Conversation not found.", "retry": "Try again"
+  },
+  "profile": {
+    "title": "Your profile", "subtitle": "Manage your details and language preference.", "personalInfo": "Personal information", "name": "Display name", "email": "Email address", "language": "Preferred language", "english": "English", "arabic": "Arabic", "save": "Save changes", "saving": "Saving…", "saved": "Profile updated", "memberSince": "Member since", "totalChats": "Conversations", "account": "Account overview", "emailNote": "Email cannot be changed yet.", "error": "We couldn’t update your profile."
+  },
+  "notFound": { "title": "Page not found", "description": "The page you requested does not exist.", "home": "Return home" },
+  "common": { "english": "English", "arabic": "العربية", "loading": "Loading…", "close": "Close", "error": "Something went wrong", "success": "Done", "demo": "Demo mode" }
+}
