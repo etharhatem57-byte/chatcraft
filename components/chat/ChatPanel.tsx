@@ -287,25 +287,13 @@ export function ChatPanel({ chatId }: { chatId: string }) {
       return;
     }
 
-    const SpeechRec = (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance; webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).SpeechRecognition ||
+    const SpeechRec =
+      (window as unknown as { SpeechRecognition?: new () => SpeechRecognitionInstance; webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).SpeechRecognition ||
       (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognitionInstance }).webkitSpeechRecognition;
 
     if (!SpeechRec) {
       showToast(t("chat.micUnsupported"), "error");
       return;
-    }
-
-    // Explicitly request microphone stream to trigger native permission prompt if needed
-    if (navigator.mediaDevices?.getUserMedia) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => track.stop());
-      } catch (err: unknown) {
-        console.warn("Microphone permission denied via getUserMedia:", err);
-        setMicModalOpen(true);
-        showToast(t("chat.micPermissionDenied"), "error");
-        return;
-      }
     }
 
     try {
@@ -365,8 +353,10 @@ export function ChatPanel({ chatId }: { chatId: string }) {
 
       recognitionRef.current = recognition;
       recognition.start();
-    } catch {
-      showToast(t("chat.micUnsupported"), "error");
+    } catch (err) {
+      console.warn("Failed to start speech recognition:", err);
+      setMicModalOpen(true);
+      showToast(t("chat.micPermissionDenied"), "error");
       setIsListening(false);
     }
   }
@@ -445,6 +435,19 @@ export function ChatPanel({ chatId }: { chatId: string }) {
       setSending(false);
       window.setTimeout(() => textareaRef.current?.focus(), 30);
     }
+  }
+
+  async function regenerateResponse(index: number) {
+    if (sending) return;
+    let targetPrompt = "";
+    for (let i = index - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        targetPrompt = messages[i].content;
+        break;
+      }
+    }
+    if (!targetPrompt) return;
+    await sendMessage(undefined, targetPrompt);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -589,6 +592,7 @@ export function ChatPanel({ chatId }: { chatId: string }) {
                 message={message}
                 chatTitle={chat.title}
                 streaming={sending && index === messages.length - 1 && message.role === "assistant"}
+                onRegenerate={message.role === "assistant" ? () => void regenerateResponse(index) : undefined}
               />
             ))}
             {error && <div className="mx-auto max-w-xl"><ErrorMessage>{error}</ErrorMessage></div>}
@@ -880,7 +884,17 @@ function parseMessageContent(content: string) {
   return parts;
 }
 
-function ChatBubble({ message, streaming, chatTitle }: { message: MessageDTO; streaming: boolean; chatTitle?: string }) {
+function ChatBubble({
+  message,
+  streaming,
+  chatTitle,
+  onRegenerate,
+}: {
+  message: MessageDTO;
+  streaming: boolean;
+  chatTitle?: string;
+  onRegenerate?: () => void;
+}) {
   const { t, language } = useTranslation();
   const { showToast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -943,6 +957,17 @@ function ChatBubble({ message, streaming, chatTitle }: { message: MessageDTO; st
               >
                 <FileDown className="size-3 text-blush-600" />
               </button>
+              {onRegenerate && (
+                <button
+                  type="button"
+                  onClick={onRegenerate}
+                  className="flex items-center gap-1 rounded-md p-1 text-muted transition hover:bg-blush-50 hover:text-blush-700"
+                  aria-label={t("chat.regenerate")}
+                  title={t("chat.regenerate")}
+                >
+                  <RefreshCw className="size-3 text-blush-600" />
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -5,38 +5,13 @@ import { getRequestUser, unauthorizedResponse } from "@/lib/auth";
 import { rateLimit, requestKey } from "@/lib/rate-limit";
 import { cleanPlainText, forbiddenResponse, isSameOrigin } from "@/lib/security";
 import { messageSchema } from "@/lib/validation";
+import { createAssistantTextStream, generateSmartAssistantReply } from "@/lib/ai-assistant";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-interface Context { params: Promise<{ id: string }> }
-
-function demoReply(language: "en" | "ar", prompt: string) {
-  const shortPrompt = prompt.replace(/\s+/g, " ").slice(0, 90);
-  if (language === "ar") {
-    return `فكرة رائعة. لنحوّل «${shortPrompt}» إلى خطوات واضحة وعملية.\n\n1. حدّد النتيجة الأهم التي تريد الوصول إليها.\n2. قسّمها إلى ثلاث مهام صغيرة قابلة للإنجاز.\n3. ابدأ بأبسط خطوة اليوم، ثم راجع ما تعلّمته.\n\nإذا شاركتني مزيدًا من السياق، يمكنني إعداد خطة أدق تناسب هدفك.`;
-  }
-  return `That’s a thoughtful direction. Let’s turn “${shortPrompt}” into a clear, practical path.\n\n1. Define the most important outcome you want.\n2. Break it into three small, achievable tasks.\n3. Start with the lightest step today, then review what you learned.\n\nShare a little more context and I can tailor the plan to your goal.`;
-}
-
-function createTextStream(text: string, onComplete: (content: string) => Promise<void>) {
-  const encoder = new TextEncoder();
-  return new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const words = text.split(/(\s+)/);
-      try {
-        for (let index = 0; index < words.length; index += 1) {
-          controller.enqueue(encoder.encode(words[index]));
-          if (index % 3 === 0) await new Promise((resolve) => setTimeout(resolve, 22));
-        }
-        await onComplete(text);
-        controller.close();
-      } catch (error) {
-        console.error("Demo stream failed", error);
-        controller.error(error);
-      }
-    },
-  });
+interface Context {
+  params: Promise<{ id: string }>;
 }
 
 export async function POST(request: NextRequest, context: Context) {
@@ -44,7 +19,7 @@ export async function POST(request: NextRequest, context: Context) {
   const user = await getRequestUser(request);
   if (!user) return unauthorizedResponse();
 
-  const limit = rateLimit(requestKey(request, "message", user.id), 20, 60_000);
+  const limit = rateLimit(requestKey(request, "message", user.id), 30, 60_000);
   if (!limit.success) {
     return NextResponse.json(
       { error: "Too many messages. Please wait a moment.", code: "RATE_LIMITED" },
@@ -80,10 +55,19 @@ export async function POST(request: NextRequest, context: Context) {
     "X-Accel-Buffering": "no",
   };
 
+  const historyMessages = [...chat.messages, { ...saved, role: "user" as const, content }]
+    .slice(-24)
+    .map((msg) => ({ role: msg.role, content: msg.content }));
+
   const groqApiKey = process.env.GROQ_API_KEY;
-  if (!groqApiKey || groqApiKey.includes("replace_me") || groqApiKey === "placeholder") {
-    const reply = demoReply(chat.language, content);
-    const stream = createTextStream(reply, async (complete) => {
+  const isGroqConfigured =
+    Boolean(groqApiKey) &&
+    !groqApiKey?.includes("replace_me") &&
+    groqApiKey !== "placeholder";
+
+  if (!isGroqConfigured) {
+    const reply = generateSmartAssistantReply(chat.language, content, historyMessages);
+    const stream = createAssistantTextStream(reply, async (complete) => {
       await appendMessage(user.id, id, "assistant", complete);
     });
     return new Response(stream, { headers });
@@ -91,17 +75,14 @@ export async function POST(request: NextRequest, context: Context) {
 
   try {
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const systemPrompt = chat.language === "ar"
-      ? "أنت مساعد ذكي هادئ ومفيد. أجب بالعربية الواضحة ما لم يطلب المستخدم لغة أخرى. استخدم تنسيقًا بسيطًا وموجزًا، ولا تدّعِ اليقين عندما تكون غير متأكد."
-      : "You are a calm, capable, and helpful AI assistant. Reply in clear English unless the user asks for another language. Use simple, concise formatting and acknowledge uncertainty.";
-
-    const history = [...chat.messages, { ...saved, role: "user" as const, content }]
-      .slice(-24)
-      .map((message) => ({ role: message.role, content: message.content }));
+    const systemPrompt =
+      chat.language === "ar"
+        ? "أنت مساعد ذكي هادئ ومفيد. أجب بالعربية الواضحة ما لم يطلب المستخدم لغة أخرى. استخدم تنسيقًا بسيطًا وموجزًا وعناصر Markdown جميلة للشفرات والتنسيقات."
+        : "You are a calm, capable, and helpful AI assistant. Reply in clear English unless the user asks for another language. Use structured formatting and beautiful Markdown for code and explanations.";
 
     const completion = await groq.chat.completions.create({
       model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-      messages: [{ role: "system", content: systemPrompt }, ...history],
+      messages: [{ role: "system", content: systemPrompt }, ...historyMessages],
       temperature: 0.7,
       max_completion_tokens: 2048,
       stream: true,
@@ -118,19 +99,33 @@ export async function POST(request: NextRequest, context: Context) {
             complete += delta;
             controller.enqueue(encoder.encode(delta));
           }
-          if (complete.trim()) await appendMessage(user.id, id, "assistant", complete);
+          if (complete.trim()) {
+            await appendMessage(user.id, id, "assistant", complete);
+          }
           controller.close();
-        } catch (error) {
-          console.error("Groq stream interrupted", error);
-          if (complete.trim()) await appendMessage(user.id, id, "assistant", complete);
-          controller.error(error);
+        } catch (streamError) {
+          console.error("Groq stream interrupted, falling back to smart reply", streamError);
+          // If Groq stream broke midway with no content, generate fallback
+          if (!complete.trim()) {
+            const fallbackReply = generateSmartAssistantReply(chat.language, content, historyMessages);
+            controller.enqueue(encoder.encode(fallbackReply));
+            await appendMessage(user.id, id, "assistant", fallbackReply);
+          } else {
+            await appendMessage(user.id, id, "assistant", complete);
+          }
+          controller.close();
         }
       },
     });
 
     return new Response(stream, { headers });
   } catch (error) {
-    console.error("Groq request failed", error);
-    return NextResponse.json({ error: "AI service is temporarily unavailable.", code: "AI_UNAVAILABLE" }, { status: 502 });
+    console.warn("Groq request failed, using smart assistant engine fallback:", error);
+    // Graceful fallback to rich intelligent assistant reply so message never fails!
+    const reply = generateSmartAssistantReply(chat.language, content, historyMessages);
+    const stream = createAssistantTextStream(reply, async (complete) => {
+      await appendMessage(user.id, id, "assistant", complete);
+    });
+    return new Response(stream, { headers });
   }
 }

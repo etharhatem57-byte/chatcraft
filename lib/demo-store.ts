@@ -19,7 +19,7 @@ const DEFAULT_DEMO_USER: DemoUser = {
   id: DEFAULT_DEMO_USER_ID,
   name: "Demo User",
   email: "demo@chatcraft.ai",
-  passwordHash: "$2b$10$8CEWts./H691034I7A/gCuqsrTIGcdPxaUwG64U/z6FNrqm6c9YAe", // "password123"
+  passwordHash: "$2b$10$V8HkO6d8/R6sv2AKQ.raXulm0/6.ChJYtuqBCLIy9KoRIoUA5F8li", // "password123"
   language: "en",
   createdAt: new Date().toISOString(),
 };
@@ -27,7 +27,7 @@ const DEFAULT_DEMO_USER: DemoUser = {
 function initDemoStore(): DemoStore {
   const users = new Map<string, DemoUser>();
   const chats = new Map<string, ChatDTO>();
-  users.set(DEFAULT_DEMO_USER.id, DEFAULT_DEMO_USER);
+  users.set(DEFAULT_DEMO_USER.id, { ...DEFAULT_DEMO_USER });
   return { users, chats };
 }
 
