@@ -49,7 +49,7 @@ export function ProfilePage({ user, totalChats, demo }: { user: PublicUser; tota
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+    router.push("/chat");
     router.refresh();
   }
 

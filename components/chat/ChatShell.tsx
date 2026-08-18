@@ -63,7 +63,6 @@ export function ChatShell({ user, demo, children }: { user: PublicUser; demo: bo
   const refreshChats = useCallback(async () => {
     try {
       const response = await fetch("/api/chats", { cache: "no-store" });
-      if (response.status === 401) return router.push("/login");
       if (!response.ok) throw new Error();
       const data = await response.json();
       setChats(data.chats);
@@ -72,7 +71,7 @@ export function ChatShell({ user, demo, children }: { user: PublicUser; demo: bo
     } finally {
       setLoading(false);
     }
-  }, [router, showToast, t]);
+  }, [showToast, t]);
 
   useEffect(() => { void refreshChats(); }, [refreshChats]);
   useEffect(() => { setSidebarOpen(false); setMenuId(null); }, [pathname]);
@@ -157,7 +156,7 @@ export function ChatShell({ user, demo, children }: { user: PublicUser; demo: bo
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+    router.push("/chat");
     router.refresh();
   }
 

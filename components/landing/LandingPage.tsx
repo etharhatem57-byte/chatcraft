@@ -6,10 +6,10 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Logo } from "@/components/Logo";
 import { useTranslation } from "@/components/providers/LanguageProvider";
 
-export function LandingPage({ authenticated }: { authenticated: boolean }) {
+export function LandingPage() {
   const { t, direction } = useTranslation();
-  const primaryHref = authenticated ? "/chat" : "/register";
-  const secondaryHref = authenticated ? "/profile" : "/login";
+  const primaryHref = "/chat";
+  const secondaryHref = "/profile";
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#FCFBFB]">
@@ -22,10 +22,10 @@ export function LandingPage({ authenticated }: { authenticated: boolean }) {
           <LanguageSwitcher compact className="sm:hidden" />
           <LanguageSwitcher className="hidden sm:inline-flex" />
           <Link href={secondaryHref} className="hidden min-h-11 items-center rounded-xl px-3.5 text-sm font-medium text-muted transition hover:bg-white hover:text-ink sm:inline-flex">
-            {authenticated ? t("nav.profile") : t("nav.login")}
+            {t("nav.profile")}
           </Link>
           <Link href={primaryHref} className="inline-flex min-h-11 items-center rounded-xl border border-blush-400/60 bg-gradient-to-b from-blush-500 to-[#CE78A8] px-4 text-sm font-medium text-white shadow-soft transition hover:-translate-y-0.5 hover:shadow-glow">
-            {authenticated ? t("chat.chats") : t("nav.register")}
+            {t("chat.chats")}
           </Link>
         </nav>
       </header>

@@ -154,7 +154,6 @@ export function ChatPanel({ chatId }: { chatId: string }) {
     setError("");
     try {
       const response = await fetch(`/api/chats/${chatId}`, { cache: "no-store" });
-      if (response.status === 401) return router.push("/login");
       if (!response.ok) throw new Error(response.status === 404 ? "NOT_FOUND" : "LOAD_ERROR");
       const data = await response.json();
       setChat(data.chat);
